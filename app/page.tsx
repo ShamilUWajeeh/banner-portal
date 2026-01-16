@@ -62,23 +62,50 @@ export default function Home() {
   };
 
   const handleDownload = async () => {
-    if (!formData.name) return alert('Please enter a name');
-    if (!processedImage) return alert('Please upload a candidate photo');
+    // Validate based on template
+    if (selectedTemplate === 'template2') {
+      // Template 2 validation
+      const uploadedPhotos = template2Photos.filter(p => p.file !== null);
+      if (uploadedPhotos.length === 0) {
+        return alert('Please upload at least one candidate photo');
+      }
+    } else {
+      // Template 1 validation
+      if (!formData.name) return alert('Please enter a name');
+      if (!processedImage) return alert('Please upload a candidate photo');
+    }
 
     setIsGenerating(true);
 
     try {
       const formDataToSend = new FormData();
       formDataToSend.append('templateId', selectedTemplate || 'template1');
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('designation', formData.designation);
       formDataToSend.append('ucNumber', formData.ucNumber);
       formDataToSend.append('areaName', formData.areaName);
-      formDataToSend.append('wardNumber', formData.wardNumber);
-      formDataToSend.append('image', processedImage);
-      formDataToSend.append('positionX', positionX.toString());
-      formDataToSend.append('positionY', positionY.toString());
-      formDataToSend.append('zoom', imageZoom.toString());
+      formDataToSend.append('designation', formData.designation);
+
+      if (selectedTemplate === 'template2') {
+        // Template 2: Send all 9 photos with their data
+        template2Photos.forEach((photo, index) => {
+          if (photo.file) {
+            formDataToSend.append(`photo${index}`, photo.file);
+            formDataToSend.append(`name${index}`, photo.name);
+            formDataToSend.append(`designation${index}`, formData.designation);
+            formDataToSend.append(`wardNumber${index}`, `${index + 1}`);
+            formDataToSend.append(`positionX${index}`, photo.positionX.toString());
+            formDataToSend.append(`positionY${index}`, photo.positionY.toString());
+            formDataToSend.append(`zoom${index}`, photo.zoom.toString());
+          }
+        });
+      } else {
+        // Template 1: Send single photo
+        formDataToSend.append('name', formData.name);
+        formDataToSend.append('wardNumber', formData.wardNumber);
+        formDataToSend.append('image', processedImage);
+        formDataToSend.append('positionX', positionX.toString());
+        formDataToSend.append('positionY', positionY.toString());
+        formDataToSend.append('zoom', imageZoom.toString());
+      }
 
       const response = await fetch('/api/generate-banner', {
         method: 'POST',
@@ -91,7 +118,10 @@ export default function Home() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `banner-${formData.name}-UC${formData.ucNumber}.png`;
+      const filename = selectedTemplate === 'template2'
+        ? `banner-UC${formData.ucNumber}-team.png`
+        : `banner-${formData.name}-UC${formData.ucNumber}.png`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
