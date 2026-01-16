@@ -55,7 +55,7 @@ async function generateTemplate2(formData: FormData) {
 
         const photoWidth = 140 * SCALE;
         const photoHeight = 170 * SCALE;
-        const startX = 250 * SCALE; // After left panel
+        const startX = 250 * SCALE;
         const availableWidth = 700 * SCALE;
         const spacing = 0;
         const totalPhotoWidth = photosInRow * photoWidth + (photosInRow - 1) * spacing;
@@ -64,34 +64,63 @@ async function generateTemplate2(formData: FormData) {
         const x = startX + offsetX + indexInRow * (photoWidth + spacing);
         const y = isTopRow ? (height / 2 - photoHeight - 2 * SCALE) : (height / 2 + 2 * SCALE);
 
-        // Draw photo with zoom and position - FIXED to show full image
+        // Draw photo - FIXED to show complete image with proper object-fit
         ctx.save();
         ctx.beginPath();
         ctx.rect(x, y, photoWidth, photoHeight);
         ctx.clip();
 
         const zoomFactor = zoom / 100;
-        const aspectRatio = photoImage.width / photoImage.height;
+        const imgAspect = photoImage.width / photoImage.height;
+        const containerAspect = photoWidth / photoHeight;
 
-        // Calculate dimensions to cover the container
         let imgWidth, imgHeight;
-        if (aspectRatio > photoWidth / photoHeight) {
+        // Use object-fit: cover logic - fill container completely
+        if (imgAspect > containerAspect) {
           // Image is wider - fit to height
           imgHeight = photoHeight * zoomFactor;
-          imgWidth = imgHeight * aspectRatio;
+          imgWidth = imgHeight * imgAspect;
         } else {
-          // Image is taller - fit to width
+          // Image is taller - fit to width  
           imgWidth = photoWidth * zoomFactor;
-          imgHeight = imgWidth / aspectRatio;
+          imgHeight = imgWidth / imgAspect;
         }
 
-        // Calculate position based on positionX and positionY (0-100)
+        // Center the image based on position controls
         const imgX = x + (photoWidth / 2) - (imgWidth * (positionX / 100));
         const imgY = y + (photoHeight / 2) - (imgHeight * (positionY / 100));
+
         ctx.drawImage(photoImage, imgX, imgY, imgWidth, imgHeight);
         ctx.restore();
 
-        // NO BLACK OVERLAY - text removed as requested
+        // Add blue fade overlay on lower body
+        const fadeGradient = ctx.createLinearGradient(0, y + photoHeight * 0.5, 0, y + photoHeight);
+        fadeGradient.addColorStop(0, 'rgba(18, 73, 159, 0)');
+        fadeGradient.addColorStop(1, 'rgba(18, 73, 159, 0.7)');
+        ctx.fillStyle = fadeGradient;
+        ctx.fillRect(x, y, photoWidth, photoHeight);
+
+        // Add text overlay with Urdu content
+        if (name || wardNumber) {
+          ctx.fillStyle = 'white';
+          ctx.textAlign = 'center';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 4 * SCALE;
+
+          // Name in Urdu
+          ctx.font = `bold ${16 * SCALE}px Faiz Lahori Nastaleeq, serif`;
+          ctx.fillText(name, x + photoWidth / 2, y + photoHeight - 45 * SCALE);
+
+          // Designation
+          ctx.font = `${11 * SCALE}px Faiz Lahori Nastaleeq, serif`;
+          ctx.fillText(designation, x + photoWidth / 2, y + photoHeight - 28 * SCALE);
+
+          // Ward number
+          ctx.font = `bold ${12 * SCALE}px Arial`;
+          ctx.fillText(`WARD ${wardNumber}`, x + photoWidth / 2, y + photoHeight - 12 * SCALE);
+
+          ctx.shadowBlur = 0;
+        }
       }
     }
 
@@ -104,39 +133,45 @@ async function generateTemplate2(formData: FormData) {
       const ucNumber = formData.get('ucNumber') as string || '91';
       const areaName = formData.get('areaName') as string || 'I-10/2';
 
-      // Draw UC text
+      // Draw UC text at top
       ctx.fillStyle = 'white';
       ctx.textAlign = 'center';
       ctx.font = `bold ${56 * SCALE}px Barlow ExtraBold, sans-serif`;
-      ctx.fillText(`UC-${ucNumber}`, 125 * SCALE, 80 * SCALE);
+      ctx.fillText(`UC-${ucNumber}`, 125 * SCALE, 60 * SCALE);
 
       ctx.fillStyle = '#FFEB3B';
       ctx.font = `bold ${28 * SCALE}px Barlow ExtraBold, sans-serif`;
-      ctx.fillText(areaName, 125 * SCALE, 115 * SCALE);
+      ctx.fillText(areaName, 125 * SCALE, 95 * SCALE);
 
-      // Load and draw Tarazu logo
+      // Load and draw Tarazu logo - MOVED UP below UC block
       const tarazuPath = path.join(process.cwd(), 'public', 'tarazu logo.png');
       const tarazuLogo = await loadImage(tarazuPath);
-      ctx.drawImage(tarazuLogo, 5 * SCALE, 140 * SCALE, 240 * SCALE, 240 * SCALE);
+      ctx.drawImage(tarazuLogo, 5 * SCALE, 110 * SCALE, 240 * SCALE, 240 * SCALE);
 
-      // Add Tarazu Urdu text below logo
+      // Add Tarazu Urdu text below logo - CORRECT SEQUENCE
       ctx.textAlign = 'center';
       ctx.font = `bold ${24 * SCALE}px Faiz Lahori Nastaleeq, serif`;
       ctx.fillStyle = 'white';
-      ctx.fillText('انتخابی', 90 * SCALE, 360 * SCALE);
-      ctx.fillText('نشان', 160 * SCALE, 360 * SCALE);
 
-      ctx.font = `bold ${50 * SCALE}px Faiz Lahori Nastaleeq, serif`;
+      // First line: انتخابی (Intikhabi)
+      ctx.fillText('انتخابی', 125 * SCALE, 360 * SCALE);
+
+      // Second line: نشان (Nishan)  
+      ctx.fillText('نشان', 125 * SCALE, 385 * SCALE);
+
+      // Third line: ترازو (Tarazu) - larger and yellow
+      ctx.font = `bold ${40 * SCALE}px Faiz Lahori Nastaleeq, serif`;
       ctx.fillStyle = '#FFEB3B';
-      ctx.fillText('ترازو', 125 * SCALE, 390 * SCALE);
+      ctx.fillText('ترازو', 125 * SCALE, 395 * SCALE);
     } catch (e) {
       console.error('Error loading left panel:', e);
     }
 
-    // Load right panel static image
+    // Load right panel static image - FIXED aspect ratio
     try {
       const rightPanelPath = path.join(process.cwd(), 'public', 'right-panel.png');
       const rightPanel = await loadImage(rightPanelPath);
+      // Draw with proper aspect ratio - no squeezing
       ctx.drawImage(rightPanel, 950 * SCALE, 0, 250 * SCALE, height);
     } catch (e) {
       console.error('Error loading right panel:', e);
