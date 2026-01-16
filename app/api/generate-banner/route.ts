@@ -143,26 +143,28 @@ async function generateTemplate2(formData: FormData) {
       ctx.font = `bold ${28 * SCALE}px Barlow ExtraBold, sans-serif`;
       ctx.fillText(areaName, 125 * SCALE, 95 * SCALE);
 
-      // Load and draw Tarazu logo - MOVED UP below UC block
+
+      // Load and draw Tarazu logo - positioned below UC block
       const tarazuPath = path.join(process.cwd(), 'public', 'tarazu logo.png');
       const tarazuLogo = await loadImage(tarazuPath);
       ctx.drawImage(tarazuLogo, 5 * SCALE, 110 * SCALE, 240 * SCALE, 240 * SCALE);
 
-      // Add Tarazu Urdu text below logo - CORRECT SEQUENCE
+      // Add Tarazu Urdu text DIRECTLY below logo - CORRECT SEQUENCE
       ctx.textAlign = 'center';
-      ctx.font = `bold ${24 * SCALE}px Faiz Lahori Nastaleeq, serif`;
       ctx.fillStyle = 'white';
 
-      // First line: انتخابی (Intikhabi)
+      // First line: انتخابی (Intikhabi) - white
+      ctx.font = `bold ${20 * SCALE}px Faiz Lahori Nastaleeq, serif`;
       ctx.fillText('انتخابی', 125 * SCALE, 360 * SCALE);
 
-      // Second line: نشان (Nishan)  
-      ctx.fillText('نشان', 125 * SCALE, 385 * SCALE);
+      // Second line: نشان (Nishan) - white
+      ctx.font = `bold ${20 * SCALE}px Faiz Lahori Nastaleeq, serif`;
+      ctx.fillText('نشان', 125 * SCALE, 380 * SCALE);
 
-      // Third line: ترازو (Tarazu) - larger and yellow
-      ctx.font = `bold ${40 * SCALE}px Faiz Lahori Nastaleeq, serif`;
+      // Third line: ترازو (Tarazu) - YELLOW and larger
+      ctx.font = `bold ${36 * SCALE}px Faiz Lahori Nastaleeq, serif`;
       ctx.fillStyle = '#FFEB3B';
-      ctx.fillText('ترازو', 125 * SCALE, 395 * SCALE);
+      ctx.fillText('ترازو', 125 * SCALE, 405 * SCALE);
     } catch (e) {
       console.error('Error loading left panel:', e);
     }
