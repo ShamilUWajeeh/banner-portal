@@ -64,39 +64,40 @@ async function generateTemplate2(formData: FormData) {
         const x = startX + offsetX + indexInRow * (photoWidth + spacing);
         const y = isTopRow ? (height / 2 - photoHeight - 2 * SCALE) : (height / 2 + 2 * SCALE);
 
-        // Draw photo with zoom and position
+        // Draw photo with zoom and position - FIXED to show full image
         ctx.save();
         ctx.beginPath();
         ctx.rect(x, y, photoWidth, photoHeight);
         ctx.clip();
 
         const zoomFactor = zoom / 100;
-        const imgWidth = photoWidth * zoomFactor;
-        const imgHeight = (photoImage.height / photoImage.width) * imgWidth;
-        const imgX = x + (photoWidth * (positionX / 100)) - (imgWidth / 2);
-        const imgY = y + (photoHeight * (positionY / 100)) - (imgHeight / 2);
+        const aspectRatio = photoImage.width / photoImage.height;
 
+        // Calculate dimensions to cover the container
+        let imgWidth, imgHeight;
+        if (aspectRatio > photoWidth / photoHeight) {
+          // Image is wider - fit to height
+          imgHeight = photoHeight * zoomFactor;
+          imgWidth = imgHeight * aspectRatio;
+        } else {
+          // Image is taller - fit to width
+          imgWidth = photoWidth * zoomFactor;
+          imgHeight = imgWidth / aspectRatio;
+        }
+
+        // Calculate position based on positionX and positionY (0-100)
+        const imgX = x + (photoWidth / 2) - (imgWidth * (positionX / 100));
+        const imgY = y + (photoHeight / 2) - (imgHeight * (positionY / 100));
         ctx.drawImage(photoImage, imgX, imgY, imgWidth, imgHeight);
         ctx.restore();
 
-        // Add text overlay at bottom of photo
-        if (name || designation || wardNumber) {
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-          ctx.fillRect(x, y + photoHeight - 60 * SCALE, photoWidth, 60 * SCALE);
-
-          ctx.fillStyle = 'white';
-          ctx.textAlign = 'center';
-          ctx.font = `bold ${14 * SCALE}px Arial`;
-          ctx.fillText(name, x + photoWidth / 2, y + photoHeight - 35 * SCALE);
-
-          ctx.font = `${9 * SCALE}px Arial`;
-          ctx.fillText(designation, x + photoWidth / 2, y + photoHeight - 22 * SCALE);
-
-          ctx.font = `bold ${10 * SCALE}px Arial`;
-          ctx.fillText(`WARD ${wardNumber}`, x + photoWidth / 2, y + photoHeight - 10 * SCALE);
-        }
+        // NO BLACK OVERLAY - text removed as requested
       }
     }
+
+    // Draw white background for right panel FIRST
+    ctx.fillStyle = 'white';
+    ctx.fillRect(950 * SCALE, 0, 250 * SCALE, height);
 
     // Load left panel elements
     try {
@@ -117,6 +118,17 @@ async function generateTemplate2(formData: FormData) {
       const tarazuPath = path.join(process.cwd(), 'public', 'tarazu logo.png');
       const tarazuLogo = await loadImage(tarazuPath);
       ctx.drawImage(tarazuLogo, 5 * SCALE, 140 * SCALE, 240 * SCALE, 240 * SCALE);
+
+      // Add Tarazu Urdu text below logo
+      ctx.textAlign = 'center';
+      ctx.font = `bold ${24 * SCALE}px Faiz Lahori Nastaleeq, serif`;
+      ctx.fillStyle = 'white';
+      ctx.fillText('انتخابی', 90 * SCALE, 360 * SCALE);
+      ctx.fillText('نشان', 160 * SCALE, 360 * SCALE);
+
+      ctx.font = `bold ${50 * SCALE}px Faiz Lahori Nastaleeq, serif`;
+      ctx.fillStyle = '#FFEB3B';
+      ctx.fillText('ترازو', 125 * SCALE, 390 * SCALE);
     } catch (e) {
       console.error('Error loading left panel:', e);
     }

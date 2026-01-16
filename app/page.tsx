@@ -101,7 +101,9 @@ export default function Home() {
         // Template 1: Send single photo
         formDataToSend.append('name', formData.name);
         formDataToSend.append('wardNumber', formData.wardNumber);
-        formDataToSend.append('image', processedImage);
+        if (processedImage) {
+          formDataToSend.append('image', processedImage);
+        }
         formDataToSend.append('positionX', positionX.toString());
         formDataToSend.append('positionY', positionY.toString());
         formDataToSend.append('zoom', imageZoom.toString());
