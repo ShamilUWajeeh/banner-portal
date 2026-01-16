@@ -2,5 +2,11 @@
   command = "npm run build"
   publish = ".next"
 
+[functions]
+  # Exclude large dependencies from function bundle
+  external_node_modules = ["canvas", "@resvg/resvg-js", "sharp"]
+  # Increase function size limit
+  node_bundler = "esbuild"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
