@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createCanvas, loadImage, registerFont } from 'canvas';
 import path from 'path';
 
+// Force dynamic rendering - don't prerender this route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const registerCustomFonts = () => {
   try {
     const fontsDir = path.join(process.cwd(), 'public', 'fonts');
@@ -12,6 +16,130 @@ const registerCustomFonts = () => {
 };
 
 registerCustomFonts();
+
+// Template 2 Generator Function
+async function generateTemplate2(formData: FormData) {
+  try {
+    const SCALE = 3; // 1200×400 at 3x = 3600×1200
+    const width = 1200 * SCALE;
+    const height = 400 * SCALE;
+
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+
+    // Blue gradient background
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, '#3392d0');
+    gradient.addColorStop(1, '#12499f');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Load and draw 9 photos
+    for (let i = 0; i < 9; i++) {
+      const photoFile = formData.get(`photo${i}`) as File | null;
+      const name = formData.get(`name${i}`) as string || '';
+      const designation = formData.get(`designation${i}`) as string || '';
+      const wardNumber = formData.get(`wardNumber${i}`) as string || `${i + 1}`;
+      const positionX = parseFloat(formData.get(`positionX${i}`) as string) || 50;
+      const positionY = parseFloat(formData.get(`positionY${i}`) as string) || 50;
+      const zoom = parseFloat(formData.get(`zoom${i}`) as string) || 100;
+
+      if (photoFile) {
+        const photoBuffer = Buffer.from(await photoFile.arrayBuffer());
+        const photoImage = await loadImage(photoBuffer);
+
+        // Calculate position in grid (4 top, 5 bottom)
+        const isTopRow = i < 4;
+        const indexInRow = isTopRow ? i : i - 4;
+        const photosInRow = isTopRow ? 4 : 5;
+
+        const photoWidth = 140 * SCALE;
+        const photoHeight = 170 * SCALE;
+        const startX = 250 * SCALE; // After left panel
+        const availableWidth = 700 * SCALE;
+        const spacing = 0;
+        const totalPhotoWidth = photosInRow * photoWidth + (photosInRow - 1) * spacing;
+        const offsetX = (availableWidth - totalPhotoWidth) / 2;
+
+        const x = startX + offsetX + indexInRow * (photoWidth + spacing);
+        const y = isTopRow ? (height / 2 - photoHeight - 2 * SCALE) : (height / 2 + 2 * SCALE);
+
+        // Draw photo with zoom and position
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, photoWidth, photoHeight);
+        ctx.clip();
+
+        const zoomFactor = zoom / 100;
+        const imgWidth = photoWidth * zoomFactor;
+        const imgHeight = (photoImage.height / photoImage.width) * imgWidth;
+        const imgX = x + (photoWidth * (positionX / 100)) - (imgWidth / 2);
+        const imgY = y + (photoHeight * (positionY / 100)) - (imgHeight / 2);
+
+        ctx.drawImage(photoImage, imgX, imgY, imgWidth, imgHeight);
+        ctx.restore();
+
+        // Add text overlay at bottom of photo
+        if (name || designation || wardNumber) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillRect(x, y + photoHeight - 60 * SCALE, photoWidth, 60 * SCALE);
+
+          ctx.fillStyle = 'white';
+          ctx.textAlign = 'center';
+          ctx.font = `bold ${14 * SCALE}px Arial`;
+          ctx.fillText(name, x + photoWidth / 2, y + photoHeight - 35 * SCALE);
+
+          ctx.font = `${9 * SCALE}px Arial`;
+          ctx.fillText(designation, x + photoWidth / 2, y + photoHeight - 22 * SCALE);
+
+          ctx.font = `bold ${10 * SCALE}px Arial`;
+          ctx.fillText(`WARD ${wardNumber}`, x + photoWidth / 2, y + photoHeight - 10 * SCALE);
+        }
+      }
+    }
+
+    // Load left panel elements
+    try {
+      const ucNumber = formData.get('ucNumber') as string || '91';
+      const areaName = formData.get('areaName') as string || 'I-10/2';
+
+      // Draw UC text
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'center';
+      ctx.font = `bold ${56 * SCALE}px Barlow ExtraBold, sans-serif`;
+      ctx.fillText(`UC-${ucNumber}`, 125 * SCALE, 80 * SCALE);
+
+      ctx.fillStyle = '#FFEB3B';
+      ctx.font = `bold ${28 * SCALE}px Barlow ExtraBold, sans-serif`;
+      ctx.fillText(areaName, 125 * SCALE, 115 * SCALE);
+
+      // Load and draw Tarazu logo
+      const tarazuPath = path.join(process.cwd(), 'public', 'tarazu logo.png');
+      const tarazuLogo = await loadImage(tarazuPath);
+      ctx.drawImage(tarazuLogo, 5 * SCALE, 140 * SCALE, 240 * SCALE, 240 * SCALE);
+    } catch (e) {
+      console.error('Error loading left panel:', e);
+    }
+
+    // Load right panel static image
+    try {
+      const rightPanelPath = path.join(process.cwd(), 'public', 'right-panel.png');
+      const rightPanel = await loadImage(rightPanelPath);
+      ctx.drawImage(rightPanel, 950 * SCALE, 0, 250 * SCALE, height);
+    } catch (e) {
+      console.error('Error loading right panel:', e);
+    }
+
+    const pngBuffer = canvas.toBuffer('image/png');
+    return new NextResponse(new Uint8Array(pngBuffer), {
+      headers: { 'Content-Type': 'image/png', 'Content-Disposition': `attachment; filename="banner-template2.png"` },
+    });
+  } catch (error) {
+    console.error('Template 2 Error:', error);
+    return NextResponse.json({ error: 'Failed to generate Template 2' }, { status: 500 });
+  }
+}
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,11 +155,15 @@ export async function POST(request: NextRequest) {
     const positionY = parseFloat(formData.get('positionY') as string) || 50;
     const zoom = parseFloat(formData.get('zoom') as string) || 100;
 
-    // For now, only template1 is implemented
-    // Template2 will be added in next phase
-    if (templateId !== 'template1') {
-      return NextResponse.json({ error: 'Template not yet implemented' }, { status: 400 });
+
+    // Handle different templates
+    if (templateId === 'template2') {
+      // Template 2: 9 photos in 4+5 grid layout
+      return await generateTemplate2(formData);
     }
+
+    // Template 1 generation (existing code below)
+
 
     const SCALE = 6;
     const width = 500 * SCALE;
