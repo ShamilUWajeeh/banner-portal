@@ -218,10 +218,12 @@ export async function POST(request: NextRequest) {
       ctx.drawImage(jiisbLogo, logoX, logoY, logoWidth, logoHeight);
     } catch (e) { }
 
+
     const pngBuffer = canvas.toBuffer('image/png');
-    return new NextResponse(pngBuffer, {
+    return new NextResponse(new Uint8Array(pngBuffer), {
       headers: { 'Content-Type': 'image/png', 'Content-Disposition': `attachment; filename="banner.png"` },
     });
+
 
   } catch (error) {
     console.error('Error:', error);
